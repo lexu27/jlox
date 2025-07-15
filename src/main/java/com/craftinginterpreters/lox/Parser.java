@@ -3,6 +3,7 @@ package com.craftinginterpreters.lox;
 import java.util.List;
 import static com.craftinginterpreters.lox.TokenType.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 class Parser {
     private static class ParseError extends RuntimeException {
@@ -28,6 +29,10 @@ class Parser {
     private Stmt statement() {
         if (match(PRINT))
             return printStatement();
+        if (match(WHILE))
+            return whileStatement();
+        if (match(FOR))
+            return forStatement();
         if (match(IF))
             return ifStatement();
         if (match(LEFT_BRACE))
@@ -67,6 +72,58 @@ class Parser {
         return new Stmt.Var(name, initializer);
     }
 
+    private Stmt whileStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'while'.");
+        Expr condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after condition.");
+        Stmt body = statement();
+
+        return new Stmt.While(condition, body);
+    }
+
+    private Stmt forStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'for'.");
+
+        Stmt initializer;
+        if (match(SEMICOLON)) {
+            initializer = null;
+        } else if (match(VAR)) {
+            initializer = varDeclaration();
+        } else {
+            initializer = expressionStatement();
+        }
+
+        Expr condition = null;
+        if (!check(SEMICOLON)) {
+            condition = expression();
+        }
+
+        consume(SEMICOLON, "Expect ';' after loop condition.");
+
+        Expr increment = null;
+        if (!check(RIGHT_PAREN)) {
+            increment = expression();
+        }
+
+        consume(RIGHT_PAREN, "Expect ')' after for clauses.");
+
+        Stmt body = statement();
+
+        if (increment != null) {
+            body = new Stmt.Block(Arrays.asList(body, new Stmt.Expression(increment)));
+        }
+        if (condition == null)
+            condition = new Expr.Literal(true);
+
+        body = new Stmt.While(condition, body); // Literally desugar the whole thing down to a while
+                                                // loop. Block with increment + condition.
+
+        if (initializer != null) {
+            body = new Stmt.Block(Arrays.asList(initializer, body)); // Scoped to the while loop
+        }
+        return body;
+    }
+
     private Stmt expressionStatement() {
         Expr expr = expression();
         consume(SEMICOLON, "Expect ';' after expression.");
@@ -88,7 +145,7 @@ class Parser {
     private Expr assignment() { // Trick is to look at left side and parse it as an r-value to
                                 // figure out what sorta target it is. If it's an identifier then
                                 // you can convert it to an l-value representation.
-        Expr expr = equality();
+        Expr expr = or();
 
         if (match(EQUAL)) {
             Token equals = previous();
@@ -101,6 +158,30 @@ class Parser {
 
             error(equals, "Invalid assignment target.");
         }
+        return expr;
+    }
+
+    private Expr or() {
+        Expr expr = and();
+
+        while (match(OR)) {
+            Token operator = previous(); // Should be or
+            Expr right = and();
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    private Expr and() {
+        Expr expr = equality();
+
+        while (match(AND)) {
+            Token operator = previous();
+            Expr right = equality();
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
         return expr;
     }
 
