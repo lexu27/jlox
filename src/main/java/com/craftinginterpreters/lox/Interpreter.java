@@ -2,10 +2,31 @@ package com.craftinginterpreters.lox;
 
 import static com.craftinginterpreters.lox.TokenType.OR;
 import java.util.List;
+import java.util.ArrayList;
 
 // Use java objects to represent the dynamic values that Lox can hold
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
-    private Environment environment = new Environment(); // Holds current env.
+    final Environment globals = new Environment();
+    private Environment environment = globals;
+
+    Interpreter() {
+        globals.define("clock", new LoxCallable() {
+            @Override
+            public int arity() {
+                return 0;
+            }
+
+            @Override
+            public Object call(Interpreter interpreter, List<Object> args) {
+                return (double) System.currentTimeMillis() / 1000.0;
+            }
+
+            @Override
+            public String toString() {
+                return "<native fn>";
+            }
+        });
+    }
 
     void interpret(List<Stmt> statements) {
         try {
@@ -182,8 +203,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {
-        String out = stringify(evaluate(stmt.expression));
-        System.out.println(out);
+        evaluate(stmt.expression);
         return null;
     }
 
@@ -210,8 +230,8 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         Object value = null;
         if (stmt.initializer != null) {
             value = evaluate(stmt.initializer);
-            environment.define(stmt.name.lexeme, value);
         }
+        environment.define(stmt.name.lexeme, value);
         return null;
     }
 
@@ -228,5 +248,27 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         Object value = evaluate(expr.value); // Evaluate r-value
         environment.assign(expr.name, value); // Bind l-value to r-value
         return value;
+    }
+
+    @Override
+    public Object visitCallExpr(Expr.Call expr) {
+        Object callee = evaluate(expr.callee);
+
+        if (!(callee instanceof LoxCallable)) {
+            throw new RuntimeError(expr.paren, "Can only call functions and classes.");
+        }
+
+        List<Object> arguments = new ArrayList<>();
+        for (Expr argument : expr.arguments) {
+            arguments.add(argument);
+        }
+
+        LoxCallable function = (LoxCallable) callee;
+
+        if (arguments.size() != function.arity()) {
+            throw new RuntimeError(expr.paren, "Expected " + function.arity()
+                    + " arguments but got " + arguments.size() + ".");
+        }
+        return function.call(this, arguments);
     }
 }
