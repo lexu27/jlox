@@ -96,8 +96,6 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         throw new RuntimeError(operator, "Operands must be numbers.");
     }
 
-
-
     @Override
     public Object visitBinaryExpr(Expr.Binary expr) {
         Object left = evaluate(expr.left);
@@ -183,7 +181,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return stmt.accept(this);
     }
 
-    private void executeBlock(List<Stmt> statements, Environment environment) {
+    void executeBlock(List<Stmt> statements, Environment environment) {
         Environment previous = this.environment; // Smart. Replace and pop off
         try {
             this.environment = environment; // New env has pointer to old
@@ -204,6 +202,13 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {
         evaluate(stmt.expression);
+        return null;
+    }
+
+    @Override
+    public Void visitFunctionStmt(Stmt.Function stmt) {
+        LoxFunction function = new LoxFunction(stmt);
+        environment.define(stmt.name.lexeme, function);
         return null;
     }
 
@@ -260,7 +265,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
         List<Object> arguments = new ArrayList<>();
         for (Expr argument : expr.arguments) {
-            arguments.add(argument);
+            arguments.add(evaluate(argument)); // NEED TO EVALUATE!!!
         }
 
         LoxCallable function = (LoxCallable) callee;
