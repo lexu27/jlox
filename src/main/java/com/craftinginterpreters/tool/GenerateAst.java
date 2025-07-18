@@ -21,8 +21,10 @@ public class GenerateAst {
                         "Unary    : Token operator, Expr right", "Variable : Token name"));
         defineAst(outputDir, "Stmt",
                 Arrays.asList("Block    : List<Stmt> statements",
+                        "Class      : Token name, List<Stmt.Function> methods",
                         "If         : Expr condition, Stmt thenBranch, Stmt elseBranch",
                         "Expression : Expr expression", "Print      : Expr expression",
+                        "Return     : Token keyword, Expr value",
                         "Function   : Token name, List<Token> params, List<Stmt> body",
                         "Var        : Token name, Expr initializer",
                         "While      : Expr condition, Stmt body"));

@@ -24,6 +24,7 @@ public class Lox {
             if (line == null)
                 break;
             run(line);
+            hadError = false;
         }
     }
 
@@ -35,10 +36,14 @@ public class Lox {
         List<Stmt> statements = parser.parse();
 
         // Stop if there was a syntax error.
-        if (hadError) {
-            hadError = false;
+        if (hadError)
             return;
-        }
+
+        Resolver resolver = new Resolver(interpreter);
+        resolver.resolve(statements);
+
+        if (hadError)
+            return;
 
         interpreter.interpret(statements);
     }

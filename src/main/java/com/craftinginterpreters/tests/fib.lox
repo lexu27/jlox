@@ -1,5 +1,10 @@
-fun sayHi(first, last) {
-  print "Hi, " + first + " " + last + "!";
-}
+var a = "global";
+{
+  fun showA() {
+    print a;
+  }
 
-sayHi("Leo", "Xu");
+  showA();
+  var a = "block";
+  showA();
+}
