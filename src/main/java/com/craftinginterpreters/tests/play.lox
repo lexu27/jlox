@@ -1,7 +1,19 @@
-class Bacon {
-  eat() {
-    print "Crunch crunch crunch!";
+class A {
+  method() {
+    print "A method";
   }
 }
 
-Bacon().eat(); // Prints "Crunch crunch crunch!".
+class B < A {
+  method() {
+    print "B method";
+  }
+
+  test() {
+    super.method();
+  }
+}
+
+class C < B {}
+
+C().test();
