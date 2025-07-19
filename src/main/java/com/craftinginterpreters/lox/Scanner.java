@@ -84,6 +84,9 @@ class Scanner {
             case '*':
                 addToken(STAR);
                 break;
+            case '%':
+                addToken(MOD);
+                break;
             case '!':
                 addToken(match('=') ? BANG_EQUAL : BANG);
                 break;

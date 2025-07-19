@@ -1,19 +1,51 @@
-class A {
-  method() {
-    print "A method";
+// mandelbrot.lox
+
+// Map value v from [a,b] to [c,d].
+fun mapRange(v, a, b, c, d) {
+  return c + (v - a) * (d - c) / (b - a);
+}
+
+// Return number of iterations before divergence, up to maxIter.
+fun mandelIter(cx, cy, maxIter) {
+  var zx = 0.0;
+  var zy = 0.0;
+  var i = 0;
+  while (i < maxIter and (zx*zx + zy*zy) <= 4.0) {
+    // z = z^2 + c  where z = zx+ i*zy, c = cx + i*cy
+    var xt = zx*zx - zy*zy + cx;
+    zy = 2.0 * zx * zy + cy;
+    zx = xt;
+    i = i + 1;
+  }
+  return i;
+}
+
+// Draw the Mandelbrot set as ASCII art.
+fun drawMandel(width, height, maxIter) {
+  for (var y = 0; y < height; y = y + 1) {
+    var line = "";
+    // map y to imaginary axis
+    var cy = mapRange(y, 0, height, -1.0, 1.0);
+    for (var x = 0; x < width; x = x + 1) {
+      // map x to real axis
+      var cx = mapRange(x, 0, width, -2.0, 1.0);
+      var iter = mandelIter(cx, cy, maxIter);
+      // choose glyph by how quickly it diverged
+      if (iter == maxIter) {
+        line = line + "@";
+      } else if (iter > maxIter * 0.75) {
+        line = line + "#";
+      } else if (iter > maxIter * 0.5) {
+        line = line + "*";
+      } else if (iter > maxIter * 0.25) {
+        line = line + "+";
+      } else {
+        line = line + ".";
+      }
+    }
+    print(line);
   }
 }
 
-class B < A {
-  method() {
-    print "B method";
-  }
-
-  test() {
-    super.method();
-  }
-}
-
-class C < B {}
-
-C().test();
+// Tweak these parameters however you like!
+drawMandel(100, 50, 50);
